@@ -1,12 +1,11 @@
-<?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+<?php namespace App\Libraries;
 
 // -------------------------------------------------------------------------------------------------
 /**
  * form_builder
  * Bootstrap form builder
  *
- * This simple Library builds internal form elements with correct wrappers for Bootstrap 3.
+ * This simple Library builds internal form elements with correct wrappers for Bootstrap 4 and codeigniter 4.
  *
  * It extends the Bootstrap form helper and will not work without it.
  *
@@ -22,21 +21,20 @@ defined('BASEPATH') OR exit('No direct script access allowed');
   USAGE
   ===============================================================================================
 
-  1. Load codeigniter 'form' helper       ---         $this->load->helper('form');
-  2. Load this library                    ---         $this->load->library('form_builder');
+  1. Load this library in any view        ---         use App\Libraries\FormBuilder;
+  2. Initialize the library in any view   ---         $formbuilder = new FormBuilder();
   3. Open your form (include the approprate class and col-sm-* for formating
-  4. Echo out the output of the form_builder->build_*
-  5. Close your form (`echo $this->form_builder->close_form()`).
+  4. Echo out the output of the formbuilder->build_*
+  5. Close your form (`echo $formbuilder->close_form()`).
   6. Enjoy easy forms
 
   -----------------------------------------------------------------------------------------------
-
-  <? $this->load->helper('form'); ?>
-  <? $this->load->library('form_builder'); ?>
-
   <?
-    echo $this->form_builder->open_form(array('action' => site_url('/account/login')));
-    echo $this->form_builder->build_form_horizontal(array(
+    use App\Libraries\FormBuilder;
+    $formbuilder = new FormBuilder();
+
+    echo $formbuilder->open_form(array('action' => site_url('/account/login')));
+    echo $formbuilder->build_form_horizontal(array(
         array(
             'id' => 'email',
             'placeholder' => 'Email',
@@ -53,14 +51,14 @@ defined('BASEPATH') OR exit('No direct script access allowed');
             'label' => 'Login'
         )
     ));
-    echo $this->form_builder->close_form();
+    echo $formbuilder->close_form();
   ?>
  */
-class Form_builder {
+class FormBuilder {
 
     private $config = array(/* Config array - can be overrided by passing in array in ini() */
         'default_input_type' => 'form_input',
-        'default_input_container_class' => 'form-group',
+        'default_input_container_class' => 'input-group mb-3',
         'bootstrap_required_input_class' => 'form-control',
         'default_dropdown_class' => 'valid',
         'default_control_label_class' => 'col-sm-2 control-label',
@@ -122,8 +120,9 @@ class Form_builder {
         if (isset($options['action'])) {
             $action = $options['action'];
             unset($options['action']);
-        } else {
-            show_error('No action set for form. Please include array(\'action\' => \'\') in the open_form(...) function call');
+        } else {//cambio para probar sin action el formulario
+            $action ="";
+            //show_error('No action set for form. Please include array(\'action\' => \'\') in the open_form(...) function call');
         }
 
         $class = $this->config['default_form_class'];
@@ -303,7 +302,7 @@ class Form_builder {
                             // Set value as label if no label is set
                             array_key_exists('label', $this->elm_options) || $this->elm_options['label'] = $this->elm_options['value'];
 
-                            $label_class = substr($this->func, 5).'-inline';
+                            $label_class = substr($this->func, 5).'-inline pr-3';
                             array_key_exists('disabled', $this->elm_options) && $label_class .= ' disabled';
 
                             $this->print_string .= '<label class="'.$label_class.'">';
@@ -495,16 +494,16 @@ class Form_builder {
      * @author Tyler Wall <tyler.r.wall@gmail.com>
      */
     function adv_set_value($field = '', $default = '') {
-        if (FALSE === ($OBJ = & _get_validation_object())) {
+        //if (FALSE === ($OBJ = & _get_validation_object())) {
             if (isset($_POST[$field])) {
-                return html_escape($_POST[$field]);
+                return htmlspecialchars($_POST[$field]);
             } elseif (isset($_GET[$field])) {
-                return html_escape($_GET[$field]);
+                return htmlspecialchars($_GET[$field]);
             }
             return $default;
-        }
+        //}
 
-        return html_escape($OBJ->set_value($field, $default));
+        //return html_escape($OBJ->set_value($field, $default));
     }
 
     function squish_HTML($html) {
@@ -576,6 +575,7 @@ class Form_builder {
              * date
              * email
              * tel
+             * time
              * number
              * input
              * hidden
@@ -613,7 +613,7 @@ class Form_builder {
                     break;
                 case 'form_label':
                     $input_html_string = form_label($this->_make_label($this->elm_options['value']), '', array(
-                        'class' => 'control-label text-left'
+                        'class' => 'col-sm-2 col-form-label'
                     ));
                     break;
                 case 'form_date':
@@ -657,6 +657,10 @@ class Form_builder {
                     $input_html_string = form_input($this->elm_options);
                     break;
                 case 'form_input':
+                    $input_html_string = form_input($this->elm_options);
+                    break;
+                case 'form_time':
+                    $this->elm_options['type'] = 'time';
                     $input_html_string = form_input($this->elm_options);
                     break;
                 case 'form_hidden':
@@ -755,9 +759,9 @@ class Form_builder {
             if (!empty($this->input_addons['pre_html'])) {
                 $ret_string = $this->input_addons['pre_html'];
             } else {
-                $ret_string .= '<div class="input-group">';
+                $ret_string .= '<div class="input-group mb-3">';
                 foreach ($this->input_addons['pre'] as $pre_addon) {
-                    $ret_string .= '<span class="input-group-addon">' . $pre_addon . '</span>';
+                    $ret_string .= '<div class="input-group-prepend"><span class="input-group-text">' . $pre_addon . '</span></div>';
                 }
             }
         }
@@ -771,7 +775,7 @@ class Form_builder {
                 $ret_string = $this->input_addons['post_html'];
             } else {
                 foreach ($this->input_addons['post'] as $post_addon) {
-                    $ret_string .= '<span class="input-group-addon">' . $post_addon . '</span>';
+                    $ret_string .= '<div class="input-group-append" ><span class="input-group-text">' . $post_addon . '</span></div>';
                 }
             }
             $ret_string .= '</div>';
@@ -875,4 +879,6 @@ class Form_builder {
       Specific Input_*
       ===============================================================================================
      */
+
+
 }
